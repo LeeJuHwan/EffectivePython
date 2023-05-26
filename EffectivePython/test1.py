@@ -1,16 +1,19 @@
 from typing import Dict, MutableMapping
 
-def populate_ranks(votes: Dict[str, int],
-                   ranks: Dict[str, int]) -> None:
+
+def populate_ranks(votes: Dict[str, int], ranks: Dict[str, int]) -> None:
     names = list(votes.keys())
     names.sort(key=votes.get, reverse=True)
     for i, name in enumerate(names, 1):
         ranks[name] = i
 
+
 def get_winner(ranks: Dict[str, int]) -> str:
     return next(iter(ranks))
 
+
 from typing import Iterator, MutableMapping
+
 
 class SortedDict(MutableMapping[str, int]):
     def __init__(self) -> None:
@@ -34,10 +37,11 @@ class SortedDict(MutableMapping[str, int]):
     def __len__(self) -> int:
         return len(self.data)
 
+
 votes = {
-    'otter': 1281,
-    'polar bear': 587,
-    'fox': 863,
+    "otter": 1281,
+    "polar bear": 587,
+    "fox": 863,
 }
 
 sorted_ranks = SortedDict()
