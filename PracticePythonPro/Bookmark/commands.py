@@ -1,30 +1,24 @@
-from database import DatabaseMangager
+from abc import ABC, abstractmethod
+from persistence import BookmarkDatabase
 from datetime import datetime
 import sys
 import requests
-db = DatabaseMangager("bookmarks.db")
+persistence = BookmarkDatabase()
 
 
-class CreateBookmarksTableCommand:
-    """테이블 생성"""
-
-    def execute(self):
-        db.create_table("bookmarks", {
-            "ID": "INTEGER PRIMARY KEY AUTOINCREMENT",
-            "TITLE": "TEXT NOT NULL",
-            "URL": "TEXT NOT NULL",
-            "NOTES": "TEXT",
-            "DATE_ADDED": "TEXT NOT NULL",
-        })
+class Command(ABC):
+    @abstractmethod
+    def execute(self, data):
+        raise NotImplementedError("Commands must implement an execute method")
 
 
-class AddBookmarkCommand:
+class AddBookmarkCommand(Command):
     """북마크 추가"""
 
     def execute(self, data, timestamp=None):
         data["DATE_ADDED"] = timestamp or datetime.utcnow().isoformat()
-        db.add("bookmarks", data)
-        return "Boomark added!"
+        persistence.create(data)
+        return True, None
 
 
 class ListBookmarksCommand:
@@ -34,15 +28,21 @@ class ListBookmarksCommand:
         self.order_by = order_by
 
     def execute(self):
-        return db.select("bookmarks", order_by=self.order_by).fetchall()
+        return True, persistence.list(order_by=self.order_by)
 
 
 class DeleteBookmarkCommand:
     """북마크 삭제"""
 
     def execute(self, data):
-        db.delete("bookmarks", {"ID": data})
-        return "Boomark deleted!"
+        persistence.delete(data)
+        return True, None
+
+
+class EditBookmarkCommand(Command):
+    def execute(self, data):
+        persistence.edit(data["id"], data["update"])
+        return True, None
 
 
 class QuitCommand:
@@ -88,11 +88,3 @@ class ImportGitHubStarsCommand:
                     timestamp=timestamp,
                 )
         return f"Imported {bookmarks_imported} bookmarks from starred repos!"
-
-
-class EditBookmarkCommand:
-    def execute(self, data):
-        db.update("bookmarks",
-                  {"ID": data["ID"]},
-                  data["update"]),
-        return "Bookmark updated!"

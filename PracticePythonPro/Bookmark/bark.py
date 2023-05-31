@@ -4,15 +4,26 @@ from collections import OrderedDict
 
 
 class Option:
-    def __init__(self, name, command, prep_call=None):
+    def __init__(self, name, command, prep_call=None, success_message="{result}"):
         self.name = name
         self.command = command
         self.prep_call = prep_call
+        self.success_message = success_message
 
     def choose(self):
         data = self.prep_call() if self.prep_call else None
-        message = self.command.execute(data) if data else self.command.execute()
-        print(message)
+        success, result = self.command.execute(data)
+
+        formatted_result = ""
+
+        if isinstance(result, list):
+            for bookmark in result:
+                formatted_result = "\n" + format_bookmark(bookmark)
+        else:
+            formatted_result = result
+
+        if success:
+            print(self.success_message.format(result=formatted_result))
 
     def __str__(self):
         return self.name
@@ -81,16 +92,39 @@ def get_new_bookmark_info():
     }
 
 
+def format_bookmark(bookmark):
+    return '\t'.join(
+        str(field) if field else ""
+        for field in bookmark
+    )
+
+
 def loop():
     clear_screen()
 
     options = OrderedDict({
-        'A': Option('Add a bookmark', commands.AddBookmarkCommand(), prep_call=get_new_bookmark_data),
-        'B': Option('List bookmarks by date', commands.ListBookmarksCommand()),
-        'T': Option('List bookmarks by title', commands.ListBookmarksCommand(order_by='title')),
-        "E": Option("Edit a bookmark", commands.EditBookmarkCommand(), prep_call=get_new_bookmark_info),
-        'D': Option('Delete a bookmark', commands.DeleteBookmarkCommand(), prep_call=get_bookmark_id_for_deletion),
-        "G": Option("Import Github stars", commands.ImportGitHubStarsCommand(), prep_call=get_github_import_options),
+        'A': Option('Add a bookmark',
+                    commands.AddBookmarkCommand(),
+                    prep_call=get_new_bookmark_data,
+                    success_message="Bookmark added!"),
+        'B': Option('List bookmarks by date',
+                    commands.ListBookmarksCommand()),
+        'T': Option('List bookmarks by title',
+                    commands.ListBookmarksCommand(order_by='title')),
+        "E": Option("Edit a bookmark",
+                    commands.EditBookmarkCommand(),
+                    prep_call=get_new_bookmark_info,
+                    success_message="Bookmark updated!"),
+        'D': Option('Delete a bookmark',
+                    commands.DeleteBookmarkCommand(),
+                    prep_call=get_bookmark_id_for_deletion,
+                    success_message="Bookmark deleted!"),
+
+        "G": Option("Import Github stars",
+                    commands.ImportGitHubStarsCommand(),
+                    prep_call=get_github_import_options,
+                    success_message="Imported {result} bookmarks from starred repos!"),
+
         'Q': Option('Quit', commands.QuitCommand()),
     })
     print_options(options)
